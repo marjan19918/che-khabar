@@ -2,7 +2,9 @@ require("dotenv").config();
 const Parser = require("rss-parser");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const parser = new Parser();
+const parser = new Parser({
+  timeout: 90000,
+});
 // Initialize Gemini with your API Key from your .env file
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
@@ -28,12 +30,17 @@ async function getNews() {
   }
 
   // Initialize the model (Flash is fast, cheap/free, and perfect for summarization)
-  const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+  const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
-  const newsPrompt = `Act as a senior tech editor. Here are 20 technology headlines: ${JSON.stringify(
-    allArticles.map((a) => a.title)
-  )}. 
-    Please select the 5 most important, rank them by impact, and provide a 1-sentence summary for each.`;
+  const newsPrompt = ` You are a technical editor. Summarize the following news into a JSON array of 5 items. 
+- Use ONLY the provided headlines. 
+- If a headline is ambiguous, ignore it. 
+- Output format: [{"title": "Headline", "summary": "One sentence summary",source:"full source"}]
+- If you are not 100% sure about a summary, omit it.
+- TEMPERATURE: 0
+
+Headlines: ${JSON.stringify(allArticles)}
+    `;
 
   // Generate content
   const result = await model.generateContent(newsPrompt);
